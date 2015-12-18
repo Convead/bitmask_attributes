@@ -4,7 +4,8 @@ module BitmaskAttributes
 
     def initialize(attribute, values=[], allow_null = true, zero_value = nil, &extension)
       @attribute = attribute
-      @values = values
+      @origin_values = values
+      @values = values.map{|v| v.is_a?(Array) ? v.first : v}
       @extension = extension
       @allow_null = allow_null
       @zero_value = zero_value
@@ -44,8 +45,14 @@ module BitmaskAttributes
 
       def generate_bitmasks_on(model)
         model.bitmasks[attribute] = HashWithIndifferentAccess.new.tap do |mapping|
-          values.each_with_index do |value, index|
-            mapping[value] = 0b1 << index
+          if @origin_values.all?{|v| v.is_a? Array}
+            @origin_values.each do |value, bitmask|
+              mapping[value] = bitmask
+            end
+          else
+            values.each_with_index do |value, index|
+              mapping[value] = 0b1 << index
+            end
           end
         end
       end
